@@ -38,6 +38,7 @@
 #define DRIVER_LLCC68_INTERFACE_H
 
 #include "driver_llcc68.h"
+#include "main.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -49,6 +50,8 @@ extern "C"{
  * @ingroup  llcc68_driver
  * @{
  */
+
+extern SPI_HandleTypeDef hspi1;
 
 /**
  * @brief  interface spi bus init

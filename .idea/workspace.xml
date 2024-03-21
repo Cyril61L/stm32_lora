@@ -11,7 +11,7 @@
   </component>
   <component name="CMakeRunConfigurationManager">
     <generated>
-      <config projectName="BluePill_template" targetName="BluePill_template.elf" />
+      <config projectName="lora_pir" targetName="lora_pir.elf" />
     </generated>
   </component>
   <component name="CMakeSettings">
@@ -20,7 +20,37 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="341ce450-39e3-46b9-8c65-986138588d27" name="Changes" comment="Edit readme" />
+    <list default="true" id="341ce450-39e3-46b9-8c65-986138588d27" name="Changes" comment="Initial commit">
+      <change afterPath="$PROJECT_DIR$/Core/Inc/driver_llcc68_cad_test.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Core/Inc/driver_llcc68_register_test.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Core/Inc/driver_llcc68_sent_receive_test.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Core/Inc/lora_transceiver.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Core/Src/driver_llcc68_cad_test.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Core/Src/driver_llcc68_register_test.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Core/Src/driver_llcc68_sent_receive_test.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Core/Src/lora_transceiver.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.cproject" beforeDir="false" afterPath="$PROJECT_DIR$/.cproject" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.mxproject" beforeDir="false" afterPath="$PROJECT_DIR$/.mxproject" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/bsp.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/bsp.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/ihm.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/ihm.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/main.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/main.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/pir.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/pir.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/radio.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/radio.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/stm32f1xx_hal_conf.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/stm32f1xx_hal_conf.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Inc/stm32f1xx_it.h" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Inc/stm32f1xx_it.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/ihm.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/ihm.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/main.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/pir.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/pir.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/radio.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/radio.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/stm32f1xx_hal_msp.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/stm32f1xx_hal_msp.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Core/Src/stm32f1xx_it.c" beforeDir="false" afterPath="$PROJECT_DIR$/Core/Src/stm32f1xx_it.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Drivers/llcc68/interface/driver_llcc68_interface.h" beforeDir="false" afterPath="$PROJECT_DIR$/Drivers/llcc68/interface/driver_llcc68_interface.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Drivers/llcc68/interface/driver_llcc68_interface_template.c" beforeDir="false" afterPath="$PROJECT_DIR$/Drivers/llcc68/interface/driver_llcc68_interface.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stm32_lora.ioc" beforeDir="false" afterPath="$PROJECT_DIR$/stm32_lora.ioc" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -30,6 +60,9 @@
     <option name="formatViaClangd" value="false" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
+  <component name="FileTemplateManagerImpl">
+    <option name="SCHEME" value="Project" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -61,30 +94,32 @@
     "WebServerToolWindowFactoryState": "false",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "last_opened_file_path": "/Users/cyril/Side_projects/lora_pir/SW/stm32_lora",
-    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings"
+    "last_opened_file_path": "/Users/cyril/Side_projects/lora_pir/SW/stm32_lora/Core/Inc",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Core/Inc" />
       <recent name="$PROJECT_DIR$/Core/Src" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/Core/Inc" />
+      <recent name="$PROJECT_DIR$/Core/Src" />
     </key>
   </component>
   <component name="RunManager" selected="OpenOCD Download &amp; Run.OCD BluePill_template">
-    <configuration name="BluePill_template.elf" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="BluePill_template" TARGET_NAME="BluePill_template.elf" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="BluePill_template" RUN_TARGET_NAME="BluePill_template.elf">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="lora_pir.elf" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lora_pir" TARGET_NAME="lora_pir.elf" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="lora_pir" RUN_TARGET_NAME="lora_pir.elf">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="OCD BluePill_template" type="com.jetbrains.cidr.embedded.openocd.conf.type" factoryName="com.jetbrains.cidr.embedded.openocd.conf.factory" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="BluePill_template" TARGET_NAME="BluePill_template.elf" CONFIG_NAME="Debug" version="1" RUN_TARGET_PROJECT_NAME="BluePill_template" RUN_TARGET_NAME="BluePill_template.elf">
+    <configuration name="OCD BluePill_template" type="com.jetbrains.cidr.embedded.openocd.conf.type" factoryName="com.jetbrains.cidr.embedded.openocd.conf.factory" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="lora_pir" TARGET_NAME="lora_pir.elf" CONFIG_NAME="Debug" version="1" RUN_TARGET_PROJECT_NAME="lora_pir" RUN_TARGET_NAME="lora_pir.elf">
       <openocd version="1" gdb-port="3333" telnet-port="4444" board-config="$PROJECT_DIR$/bluePill.cfg" reset-type="INIT" download-type="UPDATED_ONLY">
         <debugger kind="GDB" isBundled="true" />
       </openocd>
@@ -93,7 +128,7 @@
       </method>
     </configuration>
     <list>
-      <item itemvalue="CMake Application.BluePill_template.elf" />
+      <item itemvalue="CMake Application.lora_pir.elf" />
       <item itemvalue="OpenOCD Download &amp; Run.OCD BluePill_template" />
     </list>
   </component>
@@ -112,7 +147,8 @@
       <workItem from="1708878535303" duration="4730000" />
       <workItem from="1708977126364" duration="1110000" />
       <workItem from="1709847538082" duration="2497000" />
-      <workItem from="1709918292700" duration="2382000" />
+      <workItem from="1709918292700" duration="13326000" />
+      <workItem from="1710448116830" duration="40573000" />
     </task>
     <task id="LOCAL-00001" summary="First commit">
       <created>1704994038197</created>
@@ -128,7 +164,14 @@
       <option name="project" value="LOCAL" />
       <updated>1704994061231</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Initial commit">
+      <created>1709982788520</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1709982788520</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -148,6 +191,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="First commit" />
     <MESSAGE value="Edit readme" />
-    <option name="LAST_COMMIT_MESSAGE" value="Edit readme" />
+    <MESSAGE value="Initial commit" />
+    <option name="LAST_COMMIT_MESSAGE" value="Initial commit" />
   </component>
 </project>

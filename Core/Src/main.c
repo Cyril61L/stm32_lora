@@ -17,17 +17,24 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <stdlib.h>
-#include <stdbool.h>
 #include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdlib.h>
+#include "stdbool.h"
 #include "printf.h"
+#include "bsp.h"
 #include "main.h"
+#include "pir.h"
+#include "ihm.h"
+#include "driver_llcc68_sent_receive_test.h"
+#include "lora_transceiver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
+typedef StaticEventGroup_t osStaticEventGroupDef_t;
 /* USER CODE BEGIN PTD */
 
 /* USER CODE END PTD */
@@ -37,8 +44,6 @@
 #define BUILD_TIME                  __TIME__
 #define RX_BUFFER_SIZE              128
 
-#define LED_ON   HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,GPIO_PIN_RESET)
-#define LED_OFF  HAL_GPIO_WritePin(LED_GPIO_Port,LED_Pin,GPIO_PIN_SET)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,14 +57,36 @@ ADC_HandleTypeDef hadc1;
 RTC_HandleTypeDef hrtc;
 
 SPI_HandleTypeDef hspi1;
-DMA_HandleTypeDef hdma_spi1_rx;
-DMA_HandleTypeDef hdma_spi1_tx;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart3;
 
+/* Definitions for app */
+osThreadId_t appHandle;
+const osThreadAttr_t app_attributes = {
+  .name = "app",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for radio */
+osThreadId_t radioHandle;
+const osThreadAttr_t radio_attributes = {
+  .name = "radio",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for eventFlag */
+osEventFlagsId_t eventFlagHandle;
+osStaticEventGroupDef_t myEvent01ControlBlock;
+const osEventFlagsAttr_t eventFlag_attributes = {
+  .name = "eventFlag",
+  .cb_mem = &myEvent01ControlBlock,
+  .cb_size = sizeof(myEvent01ControlBlock),
+};
 /* USER CODE BEGIN PV */
 static uint8_t rxBuffer[RX_BUFFER_SIZE];
 static volatile bool uartEventFlag = false;
+static volatile bool secondFlag = false;
 static volatile uint16_t size = 0;
 static RTC_DateTypeDef date;
 static RTC_TimeTypeDef time;
@@ -68,11 +95,14 @@ static RTC_TimeTypeDef time;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_USART1_UART_Init(void);
+void AppTask(void *argument);
+void RadioTask(void *argument);
+
 /* USER CODE BEGIN PFP */
 void _putchar(char character)
 {
@@ -83,6 +113,7 @@ void _putchar(char character)
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 
 /* USER CODE END 0 */
 
@@ -117,11 +148,11 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_RTC_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
   MX_USART3_UART_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   printf_("Start lora test application %s\n",BUILD_TIME);
   numbers[0] = BUILD_TIME[0];
@@ -135,17 +166,86 @@ int main(void)
   time.Seconds = atoi(numbers);
   //scanf(BUILD_TIME,"%hhu:%hhu:%hhu",&time.Hours,&time.Minutes,&time.Seconds);
   HAL_RTC_SetTime(&hrtc,&time,RTC_FORMAT_BIN);
-    HAL_RTCEx_SetSecond_IT(&hrtc);
+  //HAL_RTCEx_SetSecond_IT(&hrtc);
 
 
-    printf_("%u:%u:%u\n",time.Hours,time.Minutes,time.Seconds);
+  printf_("%u:%u:%u\n",time.Hours,time.Minutes,time.Seconds);
+    LED_B(LED_ON);
+    HAL_Delay(100); // Bleu
+    LED_G(LED_ON);
+    HAL_Delay(100); // turquoise
+    LED_B(LED_OFF);
+    HAL_Delay(100); // Vert
+    LED_R(LED_ON);
+    HAL_Delay(100); // Orange
+    LED_G(LED_OFF);
+    HAL_Delay(100); // Rouge
+    LED_B(LED_ON);
+    HAL_Delay(100); // Rose
+    LED_G(LED_ON); // blanc
+    HAL_Delay(100); // Rose
+    LED_G(LED_OFF);
+    LED_B(LED_OFF);
+    LED_R(LED_OFF);
+
+    //HAL_GPIO_WritePin(TXEN_GPIO_Port,TXEN_Pin,GPIO_PIN_SET);
+    //HAL_GPIO_WritePin(RXEN_GPIO_Port,RXEN_Pin,GPIO_PIN_RESET);
+
+
   /* USER CODE END 2 */
 
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* creation of app */
+  appHandle = osThreadNew(AppTask, NULL, &app_attributes);
+
+  /* creation of radio */
+  radioHandle = osThreadNew(lora_task, NULL, &radio_attributes);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* Create the event(s) */
+  /* creation of eventFlag */
+  eventFlagHandle = osEventFlagsNew(&eventFlag_attributes);
+
+  /* USER CODE BEGIN RTOS_EVENTS */
+  /* add events, ... */
+  /* USER CODE END RTOS_EVENTS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-    //HAL_GPIO_WritePin(LED_R_GPIO_Port,LED_R_Pin,GPIO_PIN_RESET);
-    //HAL_GPIO_WritePin(LED_B_GPIO_Port,LED_B_Pin,GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LED_V_GPIO_Port,LED_V_Pin,GPIO_PIN_RESET);
+
+  HAL_Delay(500);
+
+
+
+
+
+
 
 
   while (1)
@@ -157,7 +257,7 @@ int main(void)
           rxBuffer[size] = '\0';
           size = 0;
           printf_("%s %u:%u:%u\n",rxBuffer,time.Hours,time.Minutes,time.Seconds);
-          HAL_GPIO_WritePin(LED_V_GPIO_Port,LED_V_Pin,GPIO_PIN_RESET);
+          //HAL_GPIO_WritePin(LED_V_GPIO_Port,LED_V_Pin,GPIO_PIN_RESET);
           HAL_Delay(500);
       }
 
@@ -342,8 +442,8 @@ static void MX_SPI1_Init(void)
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -355,6 +455,39 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_HalfDuplex_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 
 }
 
@@ -392,25 +525,6 @@ static void MX_USART3_UART_Init(void)
 }
 
 /**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Channel2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
-  /* DMA1_Channel3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -434,13 +548,13 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(EN_LORA_PWR_GPIO_Port, EN_LORA_PWR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LED_V_Pin|LED_R_Pin|LED_B_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, LED_B_Pin|LED_R_Pin|LED_V_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, EN_MES_Pin|TXEN_Pin|RXEN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LORA_RST_GPIO_Port, LORA_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LORA_RST_Pin|LORA_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
@@ -456,27 +570,27 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(EN_LORA_PWR_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PIR_IN_Pin */
-  GPIO_InitStruct.Pin = PIR_IN_Pin;
+  /*Configure GPIO pins : PIR_IN_Pin TB1_Pin */
+  GPIO_InitStruct.Pin = PIR_IN_Pin|TB1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(PIR_IN_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_V_Pin LED_R_Pin LED_B_Pin */
-  GPIO_InitStruct.Pin = LED_V_Pin|LED_R_Pin|LED_B_Pin;
+  /*Configure GPIO pins : LED_B_Pin LED_R_Pin LED_V_Pin LORA_RST_Pin */
+  GPIO_InitStruct.Pin = LED_B_Pin|LED_R_Pin|LED_V_Pin|LORA_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : CONF_3_Pin CONF_2_Pin CONF_1_Pin */
-  GPIO_InitStruct.Pin = CONF_3_Pin|CONF_2_Pin|CONF_1_Pin;
+  /*Configure GPIO pins : CONF_3_Pin CONF_2_Pin */
+  GPIO_InitStruct.Pin = CONF_3_Pin|CONF_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : TB_1_Pin LORA_BUSY_Pin DIO1_Pin */
-  GPIO_InitStruct.Pin = TB_1_Pin|LORA_BUSY_Pin|DIO1_Pin;
+  /*Configure GPIO pins : CONF_1_Pin LORA_BUSY_Pin */
+  GPIO_InitStruct.Pin = CONF_1_Pin|LORA_BUSY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -488,25 +602,37 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LORA_RST_Pin */
-  GPIO_InitStruct.Pin = LORA_RST_Pin;
+  /*Configure GPIO pin : LORA_DIO1_Pin */
+  GPIO_InitStruct.Pin = LORA_DIO1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(LORA_DIO1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LORA_CS_Pin */
+  GPIO_InitStruct.Pin = LORA_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LORA_RST_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(LORA_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DIO2_Pin DIO3_Pin */
-  GPIO_InitStruct.Pin = DIO2_Pin|DIO3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  /*Configure GPIO pins : LORA_DIO3_Pin LORA_DIO2_Pin */
+  GPIO_InitStruct.Pin = LORA_DIO3_Pin|LORA_DIO2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure peripheral I/O remapping */
   __HAL_AFIO_REMAP_PD01_ENABLE();
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -516,7 +642,7 @@ static void MX_GPIO_Init(void)
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-    if(huart->Instance == USART2)
+    if(huart->Instance == USART3)
     {
         uartEventFlag = true;
         size = Size;
@@ -524,14 +650,75 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     }
 }
 
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    switch(GPIO_Pin)
+    {
+        case LORA_DIO1_Pin:
+            lora_irq_handler();
+            //llcc68_interrupt_test_irq_handler();
+            break;
+        case TB1_Pin:
+            break;
+    }
+}
+
 void HAL_RTCEx_RTCEventCallback(RTC_HandleTypeDef *hrtc)
 {
-    HAL_GPIO_TogglePin(LED_V_GPIO_Port,LED_V_Pin);
-    printf("Test\n");
+    LED_R(LED_ON);
+    HAL_RTC_GetTime(hrtc,&time,RTC_FORMAT_BIN);
+    HAL_RTC_GetDate(hrtc,&date,RTC_FORMAT_BIN);
+    if(time.Seconds == 0)
+    {
+        printf_("%u:%u:%u\n",time.Hours,time.Minutes,time.Seconds);
+    }
+
+    LED_R(LED_OFF);
 }
 
 
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_AppTask */
+/**
+  * @brief  Function implementing the app thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_AppTask */
+void AppTask(void *argument)
+{
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END 5 */
+}
+
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM4 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM4) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
