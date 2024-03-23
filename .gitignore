@@ -61,3 +61,7 @@ Mkfile.old
 dkms.conf
 
 # End of https://www.toptal.com/developers/gitignore/api/c
+
+.idea/workspace.xml
+
+.idea/
