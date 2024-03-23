@@ -27,9 +27,6 @@
 #include "printf.h"
 #include "bsp.h"
 #include "main.h"
-#include "pir.h"
-#include "ihm.h"
-#include "driver_llcc68_sent_receive_test.h"
 #include "lora_transceiver.h"
 /* USER CODE END Includes */
 
@@ -75,6 +72,11 @@ const osThreadAttr_t radio_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for myQueue01 */
+osMessageQueueId_t loraQueueHandle;
+const osMessageQueueAttr_t myQueue01_attributes = {
+  .name = "myQueue01"
+};
 /* Definitions for eventFlag */
 osEventFlagsId_t eventFlagHandle;
 osStaticEventGroupDef_t myEvent01ControlBlock;
@@ -87,6 +89,7 @@ const osEventFlagsAttr_t eventFlag_attributes = {
 static uint8_t rxBuffer[RX_BUFFER_SIZE];
 static volatile bool uartEventFlag = false;
 static volatile bool secondFlag = false;
+static volatile bool minFlag = false;
 static volatile uint16_t size = 0;
 static RTC_DateTypeDef date;
 static RTC_TimeTypeDef time;
@@ -113,7 +116,6 @@ void _putchar(char character)
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
 
 /* USER CODE END 0 */
 
@@ -166,7 +168,7 @@ int main(void)
   time.Seconds = atoi(numbers);
   //scanf(BUILD_TIME,"%hhu:%hhu:%hhu",&time.Hours,&time.Minutes,&time.Seconds);
   HAL_RTC_SetTime(&hrtc,&time,RTC_FORMAT_BIN);
-  //HAL_RTCEx_SetSecond_IT(&hrtc);
+  HAL_RTCEx_SetSecond_IT(&hrtc);
 
 
   printf_("%u:%u:%u\n",time.Hours,time.Minutes,time.Seconds);
@@ -209,7 +211,12 @@ int main(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of myQueue01 */
+    loraQueueHandle = osMessageQueueNew (16, sizeof(uint8_t)*32, &myQueue01_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
+
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
@@ -240,13 +247,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   HAL_Delay(500);
-
-
-
-
-
-
-
+  message_t message;
 
   while (1)
   {
@@ -260,6 +261,7 @@ int main(void)
           //HAL_GPIO_WritePin(LED_V_GPIO_Port,LED_V_Pin,GPIO_PIN_RESET);
           HAL_Delay(500);
       }
+
 
     /* USER CODE END WHILE */
 
@@ -542,7 +544,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(EN_PIR_PWR_GPIO_Port, EN_PIR_PWR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(EN_LORA_PWR_GPIO_Port, EN_LORA_PWR_Pin, GPIO_PIN_RESET);
@@ -556,12 +558,12 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LORA_RST_Pin|LORA_CS_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PC13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  /*Configure GPIO pin : EN_PIR_PWR_Pin */
+  GPIO_InitStruct.Pin = EN_PIR_PWR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(EN_PIR_PWR_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : EN_LORA_PWR_Pin */
   GPIO_InitStruct.Pin = EN_LORA_PWR_Pin;
@@ -650,53 +652,8 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     }
 }
 
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    switch(GPIO_Pin)
-    {
-        case LORA_DIO1_Pin:
-            lora_irq_handler();
-            //llcc68_interrupt_test_irq_handler();
-            break;
-        case TB1_Pin:
-            break;
-    }
-}
-
-void HAL_RTCEx_RTCEventCallback(RTC_HandleTypeDef *hrtc)
-{
-    LED_R(LED_ON);
-    HAL_RTC_GetTime(hrtc,&time,RTC_FORMAT_BIN);
-    HAL_RTC_GetDate(hrtc,&date,RTC_FORMAT_BIN);
-    if(time.Seconds == 0)
-    {
-        printf_("%u:%u:%u\n",time.Hours,time.Minutes,time.Seconds);
-    }
-
-    LED_R(LED_OFF);
-}
-
-
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_AppTask */
-/**
-  * @brief  Function implementing the app thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_AppTask */
-void AppTask(void *argument)
-{
-  /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END 5 */
-}
 
 
 /**

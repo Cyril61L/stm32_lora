@@ -26,6 +26,19 @@ typedef enum  {
 #define READ_BUSY HAL_GPIO_ReadPin(LORA_BUSY_GPIO_Port,LORA_BUSY_Pin)
 #define LORA_TXEN(x) HAL_GPIO_WritePin(TXEN_GPIO_Port,TXEN_Pin,x)
 #define LORA_RXEN(x) HAL_GPIO_WritePin(RXEN_GPIO_Port,RXEN_Pin,x)
+#define EN_PIR_PWR(x) HAL_GPIO_WritePin(EN_PIR_PWR_GPIO_Port,EN_PIR_PWR_Pin,x)
+
+
+
+#define BIT0 (0x0001 << 0)
+#define BIT1 (0x0001 << 1)
+#define BIT2 (0x0001 << 2)
+#define BIT3 (0x0001 << 3)
+#define BIT4 (0x0001 << 4)
+#define BIT5 (0x0001 << 5)
+#define BIT6 (0x0001 << 6)
+#define BIT7 (0x0001 << 7)
+
 
 
 
