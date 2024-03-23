@@ -9,13 +9,15 @@
  **/
 
 #include <stdbool.h>
+#include "cmsis_os.h"
 #include "lora_transceiver.h"
 #include "driver_llcc68.h"
 #include "bsp.h"
+#include "printf.h"
 
 
 #define TAG "[RADIO]"
-#define TX_BUFFER_SIZE  64
+#define TX_BUFFER_SIZE  32
 
 
 // tx buffer
@@ -23,11 +25,14 @@ static uint8_t tx_buffer[TX_BUFFER_SIZE];
 
 // llcc68 handle
 static llcc68_handle_t gs_handle;
+static uint8_t gs_rx_done;
+
 
 
 
 static uint8_t lora_start(void);
 uint8_t lora_sent(uint8_t *data,uint8_t len, uint16_t timeoutUs);
+uint8_t lora_receive(uint16_t s);
 
 /**
  * @brief
@@ -38,12 +43,23 @@ void lora_task(void *argument)
     // Init task
     lora_init(llcc68_interface_receive_callback);
     HAL_Delay(500);
+    message_t message;
     // Endless loop
     for(;;)
     {
-        lora_start();
-        lora_sent("123",strlen("123"),0);
-        osDelay(2000);
+        if(osMessageQueueGet(loraQueueHandle,&message,NULL,100000) == osOK)
+        {
+            printf_("%s lora receive message %s\n",TAG,message.data);
+            lora_start();
+            switch (message.ID) {
+                case 1:
+                    lora_sent(message.data,message.len,0);
+                    break;
+            }
+        }
+        osDelay(1000);
+        //lora_start();
+        //lora_receive(100);
     }
 }
 
@@ -137,6 +153,15 @@ static uint8_t lora_start(void)
     if (res != 0)
     {
         llcc68_interface_debug_print("llcc68: set standby failed.\n");
+        (void)llcc68_deinit(&gs_handle);
+
+        return 1;
+    }
+
+    res = llcc68_set_calibration_image(&gs_handle,0xD7,0xDB);
+    if (res != 0)
+    {
+        llcc68_interface_debug_print("llcc68: calibration failed.\n");
         (void)llcc68_deinit(&gs_handle);
 
         return 1;
@@ -397,6 +422,86 @@ uint8_t lora_sent(uint8_t *data,uint8_t len, uint16_t timeoutUs)
 
     /* deinit */
     (void)llcc68_deinit(&gs_handle);
+
+    return 0;
+}
+
+/**
+ * @brief
+ * @param s
+ * @return
+ */
+uint8_t lora_receive(uint16_t s)
+{
+    uint8_t res;
+    uint8_t setup;
+
+    /* set lora packet params */
+    res = llcc68_set_lora_packet_params(&gs_handle, 50,
+                                        LLCC68_LORA_HEADER_EXPLICIT, 255,
+                                        LLCC68_LORA_CRC_TYPE_ON, LLCC68_BOOL_FALSE);
+    if (res != 0)
+    {
+        llcc68_interface_debug_print("llcc68: set lora packet params failed.\n");
+        (void)llcc68_deinit(&gs_handle);
+
+        return 1;
+    }
+
+    /* get iq polarity */
+    res = llcc68_get_iq_polarity(&gs_handle, (uint8_t *)&setup);
+    if (res != 0)
+    {
+        llcc68_interface_debug_print("llcc68: get iq polarity failed.\n");
+        (void)llcc68_deinit(&gs_handle);
+
+        return 1;
+    }
+    setup |= 1 << 2;
+
+    /* set the iq polarity */
+    res = llcc68_set_iq_polarity(&gs_handle, setup);
+    if (res != 0)
+    {
+        llcc68_interface_debug_print("llcc68: set iq polarity failed.\n");
+        (void)llcc68_deinit(&gs_handle);
+
+        return 1;
+    }
+
+    /* start receive */
+    res = llcc68_continuous_receive(&gs_handle);
+    if (res != 0)
+    {
+        llcc68_interface_debug_print("llcc68: lora continuous receive failed.\n");
+        (void)llcc68_deinit(&gs_handle);
+
+        return 1;
+    }
+
+    /* start receiving */
+    llcc68_interface_debug_print("llcc68: start receiving...\n");
+    gs_rx_done = 0;
+
+    while ((s != 0) && (gs_rx_done == 0))
+    {
+        s--;
+        llcc68_interface_delay_ms(1000);
+    }
+    if (gs_rx_done == 0)
+    {
+        /* receive timeout */
+        llcc68_interface_debug_print("llcc68: receive timeout.\n");
+        (void)llcc68_deinit(&gs_handle);
+
+        return 1;
+    }
+    else
+    {
+        /* finish receive test */
+        llcc68_interface_debug_print("llcc68: finish receive test.\n");
+        (void)llcc68_deinit(&gs_handle);
+    }
 
     return 0;
 }

@@ -241,14 +241,14 @@ void llcc68_interface_receive_callback(uint16_t type, uint8_t *buf, uint16_t len
     {
         case LLCC68_IRQ_TX_DONE :
         {
-            llcc68_interface_debug_print("llcc68: irq tx done la.\n");
-            
+            llcc68_interface_debug_print("llcc68: irq tx done\n",len);
             break;
         }
         case LLCC68_IRQ_RX_DONE :
         {
-            llcc68_interface_debug_print("llcc68: irq rx done.\n");
-            
+            llcc68_interface_debug_print("llcc68: irq rx done len%s.\n",len);
+            buf[len]='\0';
+            llcc68_interface_debug_print("%s",buf);
             break;
         }
         case LLCC68_IRQ_PREAMBLE_DETECTED :
